@@ -2,6 +2,7 @@ from concurrent.futures import *
 import os
 import requests
 from msal import PublicClientApplication, SerializableTokenCache
+import msgraph
 import webbrowser
 
 
@@ -41,9 +42,9 @@ class oneDriveApi:
             with open(cache_path, "w") as f:
                 f.write(token_cache.serialize())
 
-    def downloadFile(self, file_path, local_destination):
+    def downloadFile(self, filePath, local_destination):
         version = "v1.0"
-        urlSafePath = requests.utils.quote(file_path)
+        urlSafePath = requests.utils.quote(filePath)
         url = f"https://graph.microsoft.com/{version}/me/drive/root:/{urlSafePath}"
         headers = {"Authorization": f"Bearer {self.accessToken}"}
 
@@ -64,6 +65,15 @@ class oneDriveApi:
             return
         
     def uploadFile(self, onedriveFolder, localFilePath):
+        version = "v1.0"
+        cuttoffSize = 4000000
+        urlSafePath = requests.utils.quote(localFilePath)
+
+        if os.path.getsize(localFilePath) >= cuttoffSize:
+            url = f"https://graph.microsoft.com/{version}/me/drives/items/{onedriveFolder}:/{os.path.basename(localFilePath)}:/content"
+            pass
+        else: 
+            pass
         pass
 
 
