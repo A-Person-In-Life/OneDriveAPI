@@ -2,7 +2,6 @@ from concurrent.futures import *
 import os
 import requests
 from msal import PublicClientApplication, SerializableTokenCache
-import msgraph
 import webbrowser
 
 
@@ -42,38 +41,46 @@ class oneDriveApi:
             with open(cache_path, "w") as f:
                 f.write(token_cache.serialize())
 
-    def downloadFile(self, filePath, local_destination):
+    def downloadFile(self, file_path, local_destination):
         version = "v1.0"
-        urlSafePath = requests.utils.quote(filePath)
+        urlSafePath = requests.utils.quote(file_path)
         url = f"https://graph.microsoft.com/{version}/me/drive/root:/{urlSafePath}"
         headers = {"Authorization": f"Bearer {self.accessToken}"}
 
         response = requests.get(url, headers=headers)
         print(f"Status Code: {response.status_code}")
         
-        if response.status_code == 200:
-            data = response.json()
-            download_url = data.get("@microsoft.graph.downloadUrl")
-            filename = data.get("name")
-            print(f"Download URL: {download_url}")
-            file = requests.get(download_url)
-            with open(os.path.join(local_destination,filename), "wb") as f:
-                f.write(file.content)
-            
-        else:
-            print(f"Response: {response.text}")
+        if response.status_code != 200:
             return
+            
+        data = response.json()
+        download_url = data.get("@microsoft.graph.downloadUrl")
+        filename = data.get("name")
+        print(f"Download URL: {download_url}")
+        file = requests.get(download_url)
+        with open(os.path.join(local_destination,filename), "wb") as f:
+            f.write(file.content)
         
     def uploadFile(self, onedriveFolder, localFilePath):
+        cuttoffSize = 262144000
         version = "v1.0"
-        cuttoffSize = 4000000
         urlSafePath = requests.utils.quote(localFilePath)
+        
+        if os.path.getsize(localFilePath):
+            url = f"{version}/me/drive/items/{parent-id}:/{filename}:/content"
+            headers = {"Authorization": f"Bearer {self.accessToken}","Content-Type": f"plain"}
 
-        if os.path.getsize(localFilePath) >= cuttoffSize:
-            url = f"https://graph.microsoft.com/{version}/me/drives/items/{onedriveFolder}:/{os.path.basename(localFilePath)}:/content"
-            pass
-        else: 
-            pass
+            response = requests.post(url=url,headers=headers)
+            print(f"Status Code: {response.status_code}")
+
+            if response.status_code != 200:
+                print(response.text)
+
+                return
+            
+            print(response.text)
+            return
+
         pass
 
 
@@ -136,4 +143,4 @@ if __name__ == "__main__":
         scopes = f.readline().strip().split(",")
 
     api = oneDriveApi(tenantId, clientId, scopes, onedriveAuthCache)
-    api.uploadFile(r"onedrive_test",r"/home/gavin/downloads/onedrive_test/Test.docx")
+    api.uploadFile(r"onedrive_test",r"/home/gavin/downloads/onedrive_test/test.docx")
